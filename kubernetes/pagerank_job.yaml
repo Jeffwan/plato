@@ -1,0 +1,48 @@
+apiVersion: kubeflow.org/v1alpha2
+kind: MPIJob
+metadata:
+  name: graph-pagerank
+spec:
+  # figure out thread, process relationship
+  slotsPerWorker: 1
+  cleanPodPolicy: Running
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+         spec:
+           containers:
+           - image: seedjeffwan/plato:0.3
+             name: pagerank
+             env:
+             - name: LD_LIBRARY_PATH
+               value: ${LD_LIBRARY_PATH}:/3rd/hadoop2/lib:/usr/lib/jvm/java-11-openjdk-amd64/lib/server
+             command:
+             - /3rd/mpich/bin/mpiexec.hydra
+             - -n
+             - "4"
+             - /code/pagerank
+             - --threads
+             - "4"
+             - --input
+             - /data/graph/v100_e2150_ua_c3.csv
+             - --output
+             - /tmp/pagerank
+             - --is_directed
+             - "false"
+             - --iterations
+             - "10000"
+             - --eps
+             - "0.0001"
+             - --damping
+             - "0.85"
+    Worker:
+      replicas: 4
+      template:
+        spec:
+          containers:
+          - image: seedjeffwan/plato:0.3
+            name: pagerank
+            # resources:
+            #   limits:
+            #     nvidia.com/gpu: 1
